@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面（中央配置を強制固定・他への干渉を遮断）
+# 1. ログイン画面（中央配置を強制固定・横伸び阻止）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -33,21 +33,26 @@ if not st.session_state.authenticated:
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* ログインフォームを画面中央に強制。widthを固定し横伸びを阻止 */
-        div.login-target [data-testid="stForm"] {
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
+        /* ログインフォームを画面中央に完全固定 */
+        .login-frame {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 10000;
+        }
+
+        /* フォーム自体の幅を400pxに固定して横伸びを阻止 */
+        .login-frame div[data-testid="stForm"] {
+            width: 400px !important;
             background-color: white !important;
             padding: 50px 40px !important;
             border-radius: 20px !important;
             box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
-            width: 400px !important;
-            height: auto !important;
-            min-height: 280px !important;
             border: none !important;
-            z-index: 10000;
         }
 
         .login-header {
@@ -63,8 +68,8 @@ if not st.session_state.authenticated:
         </style>
     """, unsafe_allow_html=True)
 
-    # login-targetという名前を付けてサイドバーのフォームへのCSS干渉を防ぐ
-    st.markdown('<div class="login-target">', unsafe_allow_html=True)
+    # ログイン専用フレーム
+    st.markdown('<div class="login-frame">', unsafe_allow_html=True)
     with st.form("login_form"):
         st.markdown('<div class="login-header">商談事前調査システム</div>', unsafe_allow_html=True)
         pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
@@ -257,16 +262,20 @@ with st.sidebar.form("search_form"):
         st.session_state.searched = True
         st.session_state.show_report = False
 
-# レポート作成フォーム（Enter対応）
+# レポート作成フォーム（候補選択後のEnter対応）
 if st.session_state.searched:
     st.sidebar.markdown("---")
-    with st.sidebar.form("report_generate_form"):
+    with st.sidebar.form("report_generate_final"):
         f_acc = None
         f_con = None
+        
+        # 会社選択
         if c_in and st.session_state.acc_cands:
             opts = {"-- 会社選択 --": None}
             for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
             f_acc = opts[st.selectbox("会社候補", list(opts.keys()))]
+            
+        # 担当者選択
         if p_in and st.session_state.con_cands:
             c_opts = {"-- 担当者選択 --": None}
             for c in st.session_state.con_cands:
@@ -279,11 +288,13 @@ if st.session_state.searched:
             a_info = f_con.get("Account_Name")
             if isinstance(a_info, dict) and a_info.get("id"): f_acc = get_zoho_record_by_id("Accounts", a_info["id"])
 
+        # Enterキー対応のためフォーム内に配置
         if st.form_submit_button("レポートを作成 🚀", use_container_width=True):
             if f_acc or f_con:
                 st.session_state.final_acc = f_acc
                 st.session_state.final_con = f_con
                 st.session_state.show_report = True
+                st.rerun()
             else:
                 st.sidebar.error("対象を選択してください")
 
