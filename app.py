@@ -18,7 +18,31 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
-# --- ZOHO API 通信関数 ---
+# ==========================================
+# 1. パスワードロック機能
+# ==========================================
+# ▼ ここに好きなパスワードを設定してください ▼
+SYSTEM_PASSWORD = "1129" 
+
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔒 商談事前調査システム")
+    st.info("利用するにはパスワードを入力してください。")
+    password_input = st.text_input("パスワード", type="password")
+    if st.button("ログイン"):
+        if password_input == SYSTEM_PASSWORD:
+            st.session_state.authenticated = True
+            st.rerun() # 画面をリロードして本システムを表示
+        else:
+            st.error("パスワードが違います")
+    st.stop() # パスワードが合うまでここから下の処理を完全に止める
+
+
+# ==========================================
+# 2. ZOHO API 通信関数
+# ==========================================
 def get_access_token():
     url = "https://accounts.zoho.jp/oauth/v2/token"
     params = {
@@ -157,7 +181,7 @@ def get_activity_notes_final(contact_id):
     except: pass
     return []
 
-# --- スクレイピング関数 (以前の仕様を完全に維持) ---
+# --- スクレイピング関数 ---
 def fetch_company_info(base_url):
     if not base_url or base_url == "ー": return {"address_list": [], "capital": "ー", "employees": "ー"}
     target_url = base_url.strip()
@@ -302,7 +326,6 @@ if st.session_state.show_report:
     
     row1_col1, row1_col2 = st.columns(2)
     with row1_col1:
-        # 📍 住所の頭揃えレイアウト維持
         if hp_data["address_list"]:
             first_addr = hp_data["address_list"][0]
             other_addrs = "".join([f'<div style="margin-top: 0px;">{a}</div>' for a in hp_data["address_list"][1:]])
@@ -320,7 +343,6 @@ if st.session_state.show_report:
     with row1_col2:
         st.markdown(f"**👥 社員数:** {hp_data['employees']}")
 
-    # 資本金と売上の高さ揃え維持
     row2_col1, row2_col2 = st.columns(2)
     with row2_col1:
         cap_val = hp_data['capital'] if hp_data['capital'] != "ー" else "ー"
@@ -336,7 +358,6 @@ if st.session_state.show_report:
         card_img = get_zoho_attachment_image(con.get("id"))
         photo_img = get_zoho_photo(con.get("id"))
         
-        # 指示通り、画像を左と右に配置
         img_col1, img_col2 = st.columns(2)
         with img_col1:
             if card_img:
@@ -349,8 +370,7 @@ if st.session_state.show_report:
             else:
                 st.info("ZOHOにプロフィール写真が登録されていません")
         
-        # 指示通り、画像の下にプロファイルを配置
-        st.markdown("<br>", unsafe_allow_html=True) # 少し余白をあける
+        st.markdown("<br>", unsafe_allow_html=True)
         cid = con.get("id")
         st.write(f"### [{con.get('Full_Name', '名称不明')} 様](https://crm.zoho.jp/crm/tab/Contacts/{cid})")
         st.markdown(f"""
