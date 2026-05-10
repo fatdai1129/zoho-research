@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面（中央カード・完全一体化デザイン）
+# 1. ログイン画面（中央配置・崩れない新設計）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -29,56 +29,52 @@ if 'authenticated' not in st.session_state:
 if not st.session_state.authenticated:
     st.markdown("""
         <style>
-        /* 全体の背景設定 */
+        /* ログイン時はヘッダーとサイドバーを完全に消す */
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
+        
+        /* 背景色を濃紺に */
         .stApp { background-color: #111827 !important; }
 
-        /* ログインフォーム自体をカード化して中央に配置 */
+        /* ログインカード（フォーム）を中央に美しく配置 */
         div[data-testid="stForm"] {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            max-width: 420px !important;
+            margin: 20vh auto !important; /* 画面上部から適度な位置に中央配置 */
             background-color: white !important;
-            padding: 40px !important;
-            border-radius: 15px !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
-            width: 400px !important;
+            padding: 60px 40px !important;
+            border-radius: 24px !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4) !important;
             border: none !important;
-            text-align: center;
-            z-index: 9999;
-        }
-        
-        /* タイトルの設定 */
-        .login-header {
-            color: #1f2937;
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 30px;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
         }
 
-        /* 入力欄とボタンのスタイル */
-        .stTextInput input {
-            height: 45px !important;
+        /* タイトル・入力欄・ボタンの文字・色調整 */
+        .login-title {
+            color: #1f2937;
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 35px;
+            text-align: center;
         }
         .stButton button {
             background-color: #2563eb !important;
             color: white !important;
             width: 100% !important;
-            height: 45px !important;
+            height: 50px !important;
             font-weight: bold !important;
+            font-size: 16px !important;
+            border-radius: 10px !important;
             border: none !important;
-            margin-top: 10px !important;
+        }
+        input {
+            height: 48px !important;
+            font-size: 16px !important;
         }
         </style>
-        <div style="position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:9998;"></div>
     """, unsafe_allow_html=True)
-    
-    # フォームの中にタイトルを入れることで、カード内に文字を収める
+
+    # ログインフォーム本体
     with st.form("login_form"):
-        st.markdown('<div class="login-header">商談事前調査システム</div>', unsafe_allow_html=True)
-        pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワードを入力してください", label_visibility="collapsed")
+        st.markdown('<div class="login-title">商談事前調査システム</div>', unsafe_allow_html=True)
+        pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
         submit_login = st.form_submit_button("ログイン")
         
         if submit_login:
@@ -90,20 +86,21 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ==========================================
-# 2. メイン画面デザイン（小さく・タイトに調整）
+# 2. メイン画面デザイン（ログイン後：コンパクト表示）
 # ==========================================
 st.markdown("""
     <style>
     html, body, [class*="ViewContainer"] { font-size: 14px; }
-    h1 { font-size: 1.6rem !important; color: #0f172a; }
+    h1 { font-size: 1.6rem !important; color: #0f172a; margin: 0; }
     h2 { font-size: 1.3rem !important; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; margin-top: 15px !important; }
-    .block-container { padding-top: 1rem !important; }
-    img { border-radius: 8px; border: 1px solid #e2e8f0; }
+    .block-container { padding-top: 1.5rem !important; }
+    div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
+    img { border-radius: 8px; border: 1px solid #e2e8f0; max-height: 250px; object-fit: contain; }
     </style>
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. ZOHO API / 通信関数
+# 3. ZOHO API / 通信関連（安定稼働中）
 # ==========================================
 def get_access_token():
     url = "https://accounts.zoho.jp/oauth/v2/token"
@@ -250,7 +247,7 @@ def fetch_company_info(base_url):
     return info
 
 # ==========================================
-# 4. 検索・レポート表示
+# 4. 検索・レポート画面（ログイン後）
 # ==========================================
 if 'acc_cands' not in st.session_state: st.session_state.acc_cands = []
 if 'con_cands' not in st.session_state: st.session_state.con_cands = []
@@ -258,6 +255,8 @@ if 'searched' not in st.session_state: st.session_state.searched = False
 if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
+
+# サイドバーフォーム（Enterキー対応）
 with st.sidebar.form("search_form"):
     company_input = st.text_input("会社名", placeholder="株式会社抜きでOK")
     person_input = st.text_input("担当者名", placeholder="苗字のみでOK")
@@ -321,13 +320,13 @@ if st.session_state.show_report:
         card = get_zoho_attachment_image(con.get("id")); photo = get_zoho_photo(con.get("id"))
         im1, im2 = st.columns(2)
         with im1:
-            if card: st.image(card, caption="名刺データ", width=350)
+            if card: st.image(card, caption="名刺", use_column_width=False, width=350)
             else: st.info("名刺未登録")
         with im2:
-            if photo: st.image(photo, caption="プロフィール写真", width=180)
+            if photo: st.image(photo, caption="写真", use_column_width=False, width=180)
             else: st.info("写真未登録")
         st.markdown(f"### {con.get('Full_Name')} 様")
-        st.markdown(f"<b>役職:</b> {con.get('Title', 'ー')}<br><b>電話:</b> {con.get('Mobile') or con.get('Phone') or 'ー'}<br><b>メール:</b> {con.get('Email', 'ー')}<br><b>人物メモ:</b> {con.get('Description', 'ー')}", unsafe_allow_html=True)
+        st.markdown(f"<b>役職:</b> {con.get('Title', 'ー')}<br><b>連絡先:</b> {con.get('Mobile') or con.get('Phone') or 'ー'}<br><b>メール:</b> {con.get('Email', 'ー')}<br><b>人物メモ:</b> {con.get('Description', 'ー')}", unsafe_allow_html=True)
     
     st.subheader("📈 活動状況・ニュース")
     c5, c6 = st.columns(2)
