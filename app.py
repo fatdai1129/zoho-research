@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面：徹底的なデザイン修正
+# 1. ログイン画面（中央カード・完全一体化デザイン）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -27,81 +27,76 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    # ログイン専用のCSS
     st.markdown("""
         <style>
-        /* ログイン中は余計な要素を全て消す */
-        [data-testid="stSidebar"], header, footer, [data-testid="stHeader"] { display: none !important; }
-        
-        /* 背景色をダークグレーに強制 */
+        /* 全体の背景設定 */
+        [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
-        
-        /* 画面中央に浮かぶ白カード */
-        .login-card {
+
+        /* ログインフォーム自体をカード化して中央に配置 */
+        div[data-testid="stForm"] {
             position: fixed;
-            top: 50%; left: 50%;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 50px 40px;
-            border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            width: 380px;
-            z-index: 9999;
+            background-color: white !important;
+            padding: 40px !important;
+            border-radius: 15px !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
+            width: 400px !important;
+            border: none !important;
             text-align: center;
+            z-index: 9999;
         }
         
-        /* カード内のタイトル */
-        .login-title {
+        /* タイトルの設定 */
+        .login-header {
             color: #1f2937;
             font-size: 24px;
-            font-weight: bold;
+            font-weight: 800;
             margin-bottom: 30px;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
         }
 
-        /* ログインボタンの色 */
-        .stButton > button {
+        /* 入力欄とボタンのスタイル */
+        .stTextInput input {
+            height: 45px !important;
+        }
+        .stButton button {
             background-color: #2563eb !important;
             color: white !important;
-            width: 100%;
-            height: 48px;
-            font-weight: bold;
-            border-radius: 8px;
-            border: none;
+            width: 100% !important;
+            height: 45px !important;
+            font-weight: bold !important;
+            border: none !important;
+            margin-top: 10px !important;
         }
         </style>
+        <div style="position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:9998;"></div>
     """, unsafe_allow_html=True)
     
-    # ログインカードの描画
-    st.markdown(f"""
-        <div class="login-card">
-            <div class="login-title">商談事前調査システム</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # カードの「上」に入力フォームを重ねる（Streamlitの挙動を制御）
-    col1, col2, col3 = st.columns([1, 1.5, 1])
-    with col2:
-        # 見た目上の位置調整
-        st.write("<div style='height:40vh'></div>", unsafe_allow_html=True)
-        with st.form("login_form"):
-            pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
-            if st.form_submit_button("ログイン"):
-                if pw_input == SYSTEM_PASSWORD:
-                    st.session_state.authenticated = True
-                    st.rerun()
-                else:
-                    st.error("パスワードが正しくありません")
+    # フォームの中にタイトルを入れることで、カード内に文字を収める
+    with st.form("login_form"):
+        st.markdown('<div class="login-header">商談事前調査システム</div>', unsafe_allow_html=True)
+        pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワードを入力してください", label_visibility="collapsed")
+        submit_login = st.form_submit_button("ログイン")
+        
+        if submit_login:
+            if pw_input == SYSTEM_PASSWORD:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("パスワードが正しくありません")
     st.stop()
 
 # ==========================================
-# 2. メイン画面デザイン（小さく・バランス良く）
+# 2. メイン画面デザイン（小さく・タイトに調整）
 # ==========================================
 st.markdown("""
     <style>
     html, body, [class*="ViewContainer"] { font-size: 14px; }
-    h1 { font-size: 1.6rem !important; color: #0f172a; margin-bottom: 10px; }
+    h1 { font-size: 1.6rem !important; color: #0f172a; }
     h2 { font-size: 1.3rem !important; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; margin-top: 15px !important; }
-    h3 { font-size: 1.1rem !important; }
     .block-container { padding-top: 1rem !important; }
     img { border-radius: 8px; border: 1px solid #e2e8f0; }
     </style>
@@ -255,7 +250,7 @@ def fetch_company_info(base_url):
     return info
 
 # ==========================================
-# 4. メイン機能：検索と表示
+# 4. 検索・レポート表示
 # ==========================================
 if 'acc_cands' not in st.session_state: st.session_state.acc_cands = []
 if 'con_cands' not in st.session_state: st.session_state.con_cands = []
@@ -263,8 +258,6 @@ if 'searched' not in st.session_state: st.session_state.searched = False
 if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
-
-# サイドバー検索フォーム（Enterキー対応）
 with st.sidebar.form("search_form"):
     company_input = st.text_input("会社名", placeholder="株式会社抜きでOK")
     person_input = st.text_input("担当者名", placeholder="苗字のみでOK")
@@ -301,7 +294,6 @@ if st.session_state.searched:
             st.session_state.final_con = selected_con
             st.session_state.show_report = True
 
-# レポート本体
 if st.session_state.show_report:
     acc = st.session_state.final_acc
     con = st.session_state.final_con
@@ -312,7 +304,6 @@ if st.session_state.show_report:
     st.markdown(f"## 🏢 [{name}]({link if url != 'ー' else '#'}) 調査レポート")
     st.caption(f"📅 取得日時: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
-    # 会社情報
     st.subheader("📊 会社プロファイル")
     hp = fetch_company_info(url) if url != "ー" else {"address_list": [], "capital": "ー", "employees": "ー"}
     c1, c2 = st.columns(2)
@@ -325,7 +316,6 @@ if st.session_state.show_report:
     with c3: st.write(f"**💰 資本金:** {hp['capital']}")
     with c4: st.write(f"**📈 年商:** {acc.get('Revenue', 'ー') if acc else 'ー'}")
 
-    # 担当者情報
     st.subheader("👤 担当者プロファイル")
     if con:
         card = get_zoho_attachment_image(con.get("id")); photo = get_zoho_photo(con.get("id"))
@@ -336,12 +326,10 @@ if st.session_state.show_report:
         with im2:
             if photo: st.image(photo, caption="プロフィール写真", width=180)
             else: st.info("写真未登録")
-        
         st.markdown(f"### {con.get('Full_Name')} 様")
         st.markdown(f"<b>役職:</b> {con.get('Title', 'ー')}<br><b>電話:</b> {con.get('Mobile') or con.get('Phone') or 'ー'}<br><b>メール:</b> {con.get('Email', 'ー')}<br><b>人物メモ:</b> {con.get('Description', 'ー')}", unsafe_allow_html=True)
     
-    # 履歴
-    st.subheader("📈 ZOHO活動・ニュース")
+    st.subheader("📈 活動状況・ニュース")
     c5, c6 = st.columns(2)
     with c5:
         notes = get_activity_notes_final(con.get("id")) if con else []
