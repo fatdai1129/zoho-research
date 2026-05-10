@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面（中央配置・崩れない絶対固定）
+# 1. ログイン画面（CSSで「絶対中央・サイズ固定」を強制）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -33,8 +33,8 @@ if not st.session_state.authenticated:
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* ログインフォームを画面のど真ん中に強制固定（縦伸び防止） */
-        form[aria-label="login_form"] {
+        /* ログインフォームを画面のど真ん中に「絶対」固定 */
+        div[data-testid="stForm"] {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
@@ -43,18 +43,20 @@ if not st.session_state.authenticated:
             padding: 50px 40px !important;
             border-radius: 20px !important;
             box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
-            width: 420px !important;
-            height: auto !important; /* 縦伸びを防止 */
+            width: 400px !important; /* 幅を400pxに固定 */
+            height: 300px !important; /* 高さを300pxに固定（縦伸び防止） */
             border: none !important;
             z-index: 10000;
-            margin: 0 !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .login-header {
             color: #1f2937;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             text-align: center;
         }
         
@@ -65,10 +67,12 @@ if not st.session_state.authenticated:
             height: 48px !important;
             font-weight: bold !important;
             border-radius: 10px !important;
+            margin-top: 10px !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
+    # ログインフォーム
     with st.form("login_form"):
         st.markdown('<div class="login-header">商談事前調査システム</div>', unsafe_allow_html=True)
         pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
@@ -94,7 +98,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. ZOHO API / 通信関数
+# 3. ZOHO API 通信関数
 # ==========================================
 def get_access_token():
     url = "https://accounts.zoho.jp/oauth/v2/token"
@@ -250,30 +254,30 @@ if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
 
-# 1. 候補検索（Enter対応）
+# 1. 候補検索フォーム
 with st.sidebar.form("search_form"):
-    c_in = st.text_input("会社名", placeholder="株式会社抜きでOK")
-    p_in = st.text_input("担当者名", placeholder="苗字のみでOK")
+    company_input = st.text_input("会社名", placeholder="株式会社抜きでOK")
+    person_input = st.text_input("担当者名", placeholder="苗字のみでOK")
     if st.form_submit_button("候補を検索", use_container_width=True):
         with st.spinner("ZOHO通信中..."):
-            st.session_state.acc_cands = search_zoho_candidates("Accounts", c_in) if c_in else []
-            st.session_state.con_cands = search_zoho_candidates("Contacts", p_in) if p_in else []
+            st.session_state.acc_cands = search_zoho_candidates("Accounts", company_input) if company_input else []
+            st.session_state.con_cands = search_zoho_candidates("Contacts", person_input) if person_input else []
             st.session_state.searched = True
             st.session_state.show_report = False
 
-# 2. レポート作成（Enter対応のため、選択とボタンを1つのフォームとして構築）
+# 2. レポート作成フォーム
 if st.session_state.searched:
     st.sidebar.markdown("---")
-    with st.sidebar.form("report_final_form"):
+    with st.sidebar.form("report_generate_form"):
         f_acc = None
         f_con = None
         
-        if c_in and st.session_state.acc_cands:
+        if company_input and st.session_state.acc_cands:
             opts = {"-- 会社選択 --": None}
             for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
             f_acc = opts[st.selectbox("会社候補", list(opts.keys()))]
             
-        if p_in and st.session_state.con_cands:
+        if person_input and st.session_state.con_cands:
             c_opts = {"-- 担当者選択 --": None}
             for c in st.session_state.con_cands:
                 c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
@@ -285,7 +289,7 @@ if st.session_state.searched:
             a_info = f_con.get("Account_Name")
             if isinstance(a_info, dict) and a_info.get("id"): f_acc = get_zoho_record_by_id("Accounts", a_info["id"])
 
-        # このボタンがあるフォーム内でEnterを叩けば、レポートが作成されます
+        # Enterキーでレポート作成を実行
         if st.form_submit_button("レポートを作成 🚀", use_container_width=True):
             if f_acc or f_con:
                 st.session_state.final_acc = f_acc
@@ -332,7 +336,7 @@ if st.session_state.show_report:
         st.markdown(f"### {con.get('Full_Name')} 様")
         st.markdown(f"<b>役職:</b> {con.get('Title', 'ー')}<br><b>電話:</b> {con.get('Mobile') or con.get('Phone') or 'ー'}<br><b>メール:</b> {con.get('Email', 'ー')}<br><b>人物メモ:</b> {con.get('Description', 'ー')}", unsafe_allow_html=True)
     
-    # 履歴
+    # 活動履歴
     st.subheader("📈 活動状況・ニュース")
     c5, c6 = st.columns(2)
     with c5:
