@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン機能（中央配置デザイン・完全版）
+# 1. ログイン画面：徹底的なデザイン修正
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -27,81 +27,88 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
+    # ログイン専用のCSS
     st.markdown("""
         <style>
-        /* 背景とサイドバー等の非表示 */
-        [data-testid="stSidebar"], header { display: none; }
-        .stApp { background-color: #1e2130; }
+        /* ログイン中は余計な要素を全て消す */
+        [data-testid="stSidebar"], header, footer, [data-testid="stHeader"] { display: none !important; }
         
-        /* 画面中央に固定するコンテナ */
-        .login-outer {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
+        /* 背景色をダークグレーに強制 */
+        .stApp { background-color: #111827 !important; }
         
-        /* ログインカードのデザイン */
+        /* 画面中央に浮かぶ白カード */
         .login-card {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
             background-color: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 400px;
+            padding: 50px 40px;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 380px;
+            z-index: 9999;
             text-align: center;
         }
         
-        /* ボタンの色調整 */
-        div.stButton > button {
-            background-color: #3b82f6 !important;
+        /* カード内のタイトル */
+        .login-title {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        /* ログインボタンの色 */
+        .stButton > button {
+            background-color: #2563eb !important;
             color: white !important;
-            border: none !important;
-            height: 45px !important;
+            width: 100%;
+            height: 48px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
         }
         </style>
     """, unsafe_allow_html=True)
     
-    # ログインフォームの構築
-    st.markdown('<div class="login-outer">', unsafe_allow_html=True)
-    with st.container():
-        st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown("<h2 style='color:#333; margin-top:0;'>商談事前調査システム</h2>", unsafe_allow_html=True)
-        
+    # ログインカードの描画
+    st.markdown(f"""
+        <div class="login-card">
+            <div class="login-title">商談事前調査システム</div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # カードの「上」に入力フォームを重ねる（Streamlitの挙動を制御）
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    with col2:
+        # 見た目上の位置調整
+        st.write("<div style='height:40vh'></div>", unsafe_allow_html=True)
         with st.form("login_form"):
-            # ラベルを非表示にし、プレースホルダーのみに
-            pw = st.text_input("パスワード", type="password", placeholder="パスワードを入力", label_visibility="collapsed")
-            submit_login = st.form_submit_button("ログイン", use_container_width=True)
-            
-            if submit_login:
-                if pw == SYSTEM_PASSWORD:
+            pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
+            if st.form_submit_button("ログイン"):
+                if pw_input == SYSTEM_PASSWORD:
                     st.session_state.authenticated = True
                     st.rerun()
                 else:
                     st.error("パスワードが正しくありません")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # ==========================================
-# 2. メイン画面のデザイン（タイトに調整）
+# 2. メイン画面デザイン（小さく・バランス良く）
 # ==========================================
 st.markdown("""
     <style>
     html, body, [class*="ViewContainer"] { font-size: 14px; }
-    h1 { font-size: 1.6rem !important; padding-top: 0rem; color: #1e293b; }
-    h2 { font-size: 1.3rem !important; margin-top: 0.8rem !important; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
-    h3 { font-size: 1.1rem !important; margin-top: 0.5rem !important; }
-    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-    div[data-testid="stVerticalBlock"] { gap: 0.4rem !important; }
-    img { max-height: 240px; object-fit: contain; border: 1px solid #eee; border-radius: 5px; }
+    h1 { font-size: 1.6rem !important; color: #0f172a; margin-bottom: 10px; }
+    h2 { font-size: 1.3rem !important; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; margin-top: 15px !important; }
+    h3 { font-size: 1.1rem !important; }
+    .block-container { padding-top: 1rem !important; }
+    img { border-radius: 8px; border: 1px solid #e2e8f0; }
     </style>
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. ZOHO API / 通信関連（変更なし）
+# 3. ZOHO API / 通信関数
 # ==========================================
 def get_access_token():
     url = "https://accounts.zoho.jp/oauth/v2/token"
@@ -143,14 +150,13 @@ def search_zoho_candidates(module, search_text):
             if data: add_candidates(data)
     except: pass
     field_name = "Account_Name" if module == "Accounts" else "Full_Name"
-    for op in ["equals", "starts_with", "contains"]:
-        try:
-            params = {"criteria": f"({field_name}:starts_with:{clean_text})"}
-            res = requests.get(url, headers=headers, params=params)
-            if res.status_code == 200:
-                data = res.json().get("data")
-                if data: add_candidates(data)
-        except: continue
+    try:
+        params = {"criteria": f"({field_name}:starts_with:{clean_text})"}
+        res = requests.get(url, headers=headers, params=params)
+        if res.status_code == 200:
+            data = res.json().get("data")
+            if data: add_candidates(data)
+    except: pass
     return candidates
 
 def get_zoho_photo(contact_id):
@@ -187,19 +193,6 @@ def get_zoho_attachment_image(contact_id):
     except: pass
     return None
 
-def get_zoho_sub_data_simple(module, record_id, sub_module):
-    token = get_access_token()
-    if not token or not record_id: return "ー"
-    url = f"https://www.zohoapis.jp/crm/v6/{module}/{record_id}/{sub_module}"
-    headers = {"Authorization": f"Zoho-oauthtoken {token}"}
-    try:
-        res = requests.get(url, headers=headers)
-        if res.status_code == 200:
-            data = res.json().get("data", [])
-            if data: return f"{len(data)}件の登録があります"
-    except: pass
-    return "ー"
-
 def get_activity_notes_final(contact_id):
     token = get_access_token()
     if not token or not contact_id: return []
@@ -210,6 +203,19 @@ def get_activity_notes_final(contact_id):
         if res.status_code == 200: return res.json().get("data", [])
     except: pass
     return []
+
+def get_zoho_sub_data_simple(module, record_id, sub_module):
+    token = get_access_token()
+    if not token or not record_id: return "ー"
+    url = f"https://www.zohoapis.jp/crm/v6/{module}/{record_id}/{sub_module}"
+    headers = {"Authorization": f"Zoho-oauthtoken {token}"}
+    try:
+        res = requests.get(url, headers=headers)
+        if res.status_code == 200:
+            data = res.json().get("data", [])
+            if data: return f"{len(data)}件登録あり"
+    except: pass
+    return "ー"
 
 def fetch_company_info(base_url):
     if not base_url or base_url == "ー": return {"address_list": [], "capital": "ー", "employees": "ー"}
@@ -249,55 +255,45 @@ def fetch_company_info(base_url):
     return info
 
 # ==========================================
-# 4. 検索とレポート表示
+# 4. メイン機能：検索と表示
 # ==========================================
 if 'acc_cands' not in st.session_state: st.session_state.acc_cands = []
 if 'con_cands' not in st.session_state: st.session_state.con_cands = []
 if 'searched' not in st.session_state: st.session_state.searched = False
 if 'show_report' not in st.session_state: st.session_state.show_report = False
 
-st.sidebar.subheader("🔍 調査対象を検索")
+st.sidebar.markdown("### 🔍 調査対象検索")
 
-# 検索フォーム（Enterキー対応）
+# サイドバー検索フォーム（Enterキー対応）
 with st.sidebar.form("search_form"):
-    company_input = st.text_input("会社名", placeholder="株式会社抜きで検索可")
-    person_input = st.text_input("担当者名", placeholder="苗字のみで検索可")
-    search_btn = st.form_submit_button("候補を検索", use_container_width=True)
-
-if search_btn:
-    with st.spinner("取得中..."):
-        st.session_state.acc_cands = search_zoho_candidates("Accounts", company_input) if company_input else []
-        st.session_state.con_cands = search_zoho_candidates("Contacts", person_input) if person_input else []
-        st.session_state.searched = True
-        st.session_state.show_report = False
+    company_input = st.text_input("会社名", placeholder="株式会社抜きでOK")
+    person_input = st.text_input("担当者名", placeholder="苗字のみでOK")
+    if st.form_submit_button("候補を検索", use_container_width=True):
+        with st.spinner("ZOHO通信中..."):
+            st.session_state.acc_cands = search_zoho_candidates("Accounts", company_input) if company_input else []
+            st.session_state.con_cands = search_zoho_candidates("Contacts", person_input) if person_input else []
+            st.session_state.searched = True
+            st.session_state.show_report = False
 
 selected_acc = None
 selected_con = None
 
 if st.session_state.searched:
     st.sidebar.markdown("---")
-    if company_input:
-        if st.session_state.acc_cands:
-            acc_options = {"-- 会社を選んでください --": None}
-            for a in st.session_state.acc_cands: acc_options[a['Account_Name']] = a
-            sel_acc_label = st.sidebar.selectbox("会社候補", list(acc_options.keys()))
-            selected_acc = acc_options[sel_acc_label]
-        else: st.sidebar.warning("該当する会社なし")
-    
-    if person_input:
-        if st.session_state.con_cands:
-            con_options = {"-- 担当者を選んでください --": None}
-            for c in st.session_state.con_cands:
-                c_acc = c.get('Account_Name')
-                c_acc_name = c_acc.get('name') if isinstance(c_acc, dict) else (c_acc or "会社未登録")
-                con_options[f"{c.get('Full_Name')} ({c_acc_name})"] = c
-            sel_con_label = st.sidebar.selectbox("担当者候補", list(con_options.keys()))
-            selected_con = con_options[sel_con_label]
-        else: st.sidebar.warning("該当する担当者なし")
+    if company_input and st.session_state.acc_cands:
+        acc_opts = {"-- 会社選択 --": None}
+        for a in st.session_state.acc_cands: acc_opts[a['Account_Name']] = a
+        selected_acc = acc_opts[st.sidebar.selectbox("会社候補", list(acc_opts.keys()))]
+    if person_input and st.session_state.con_cands:
+        con_opts = {"-- 担当者選択 --": None}
+        for c in st.session_state.con_cands:
+            c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
+            con_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
+        selected_con = con_opts[st.sidebar.selectbox("担当者候補", list(con_opts.keys()))]
     
     if selected_con and not selected_acc:
-        acc_info = selected_con.get("Account_Name")
-        if isinstance(acc_info, dict) and acc_info.get("id"): selected_acc = get_zoho_record_by_id("Accounts", acc_info["id"])
+        a_info = selected_con.get("Account_Name")
+        if isinstance(a_info, dict) and a_info.get("id"): selected_acc = get_zoho_record_by_id("Accounts", a_info["id"])
     
     if selected_acc or selected_con:
         if st.sidebar.button("レポートを作成 🚀", use_container_width=True):
@@ -305,57 +301,56 @@ if st.session_state.searched:
             st.session_state.final_con = selected_con
             st.session_state.show_report = True
 
+# レポート本体
 if st.session_state.show_report:
     acc = st.session_state.final_acc
     con = st.session_state.final_con
-    display_company = acc.get("Account_Name") if acc else "会社情報なし"
-    auto_url = acc.get("Website") if acc else "ー"
-    link_url = auto_url if auto_url.startswith('http') else 'https://' + auto_url
+    name = acc.get("Account_Name") if acc else "調査対象"
+    url = acc.get("Website") if acc else "ー"
+    link = url if url.startswith('http') else 'https://' + url
     
-    st.markdown(f"## 🏢 [{display_company}]({link_url if auto_url != 'ー' else '#'}) 調査レポート")
-    st.caption(f"📅 調査日時: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    st.markdown(f"## 🏢 [{name}]({link if url != 'ー' else '#'}) 調査レポート")
+    st.caption(f"📅 取得日時: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
     # 会社情報
     st.subheader("📊 会社プロファイル")
-    hp_data = fetch_company_info(auto_url) if auto_url != "ー" else {"address_list": [], "capital": "ー", "employees": "ー"}
+    hp = fetch_company_info(url) if url != "ー" else {"address_list": [], "capital": "ー", "employees": "ー"}
     c1, c2 = st.columns(2)
     with c1:
-        if hp_data["address_list"]:
-            first = hp_data["address_list"][0]; others = "".join([f'<div style="margin-top:0px;">{a}</div>' for a in hp_data["address_list"][1:]])
-            st.markdown(f'<div style="display:flex;line-height:1.4;"><b>📍 住所:&nbsp;</b><div>{first}{others}</div></div>', unsafe_allow_html=True)
-        else: st.markdown("**📍 住所:** ー")
-    with c2: st.markdown(f"**👥 社員数:** {hp_data['employees']}")
+        if hp["address_list"]:
+            st.markdown(f'<div style="display:flex;"><b>📍 住所:&nbsp;</b><div>{"<br>".join(hp["address_list"])}</div></div>', unsafe_allow_html=True)
+        else: st.write("**📍 住所:** ー")
+    with c2: st.write(f"**👥 社員数:** {hp['employees']}")
     c3, c4 = st.columns(2)
-    with c3: st.markdown(f"**💰 資本金:** {hp_data['capital']}")
-    with c4: st.markdown(f"**📈 売上/年度:** {acc.get('Revenue', 'ー') if acc else 'ー'}")
+    with c3: st.write(f"**💰 資本金:** {hp['capital']}")
+    with c4: st.write(f"**📈 年商:** {acc.get('Revenue', 'ー') if acc else 'ー'}")
 
     # 担当者情報
     st.subheader("👤 担当者プロファイル")
     if con:
-        card_img = get_zoho_attachment_image(con.get("id")); photo_img = get_zoho_photo(con.get("id"))
+        card = get_zoho_attachment_image(con.get("id")); photo = get_zoho_photo(con.get("id"))
         im1, im2 = st.columns(2)
         with im1:
-            if card_img: st.image(card_img, caption="名刺", use_container_width=False, width=320)
+            if card: st.image(card, caption="名刺データ", width=350)
             else: st.info("名刺未登録")
         with im2:
-            if photo_img: st.image(photo_img, caption="写真", use_container_width=False, width=180)
+            if photo: st.image(photo, caption="プロフィール写真", width=180)
             else: st.info("写真未登録")
         
-        st.write(f"### {con.get('Full_Name', '不明')} 様")
-        st.markdown(f"<b>部署・役職:</b> {con.get('Department', 'ー')} {con.get('Title', 'ー')}<br><b>連絡先:</b> {con.get('Mobile') or con.get('Phone') or 'ー'} / {con.get('Email', 'ー')}<br><b>人物メモ:</b> {con.get('Description', 'ー')}", unsafe_allow_html=True)
+        st.markdown(f"### {con.get('Full_Name')} 様")
+        st.markdown(f"<b>役職:</b> {con.get('Title', 'ー')}<br><b>電話:</b> {con.get('Mobile') or con.get('Phone') or 'ー'}<br><b>メール:</b> {con.get('Email', 'ー')}<br><b>人物メモ:</b> {con.get('Description', 'ー')}", unsafe_allow_html=True)
     
-    # 履歴等
-    st.subheader("📈 活動状況・ニュース")
+    # 履歴
+    st.subheader("📈 ZOHO活動・ニュース")
     c5, c6 = st.columns(2)
     with c5:
         notes = get_activity_notes_final(con.get("id")) if con else []
-        if not notes: st.info("ZOHO活動メモなし")
+        if not notes: st.write("活動メモなし")
         else:
             for n in notes[:2]: st.warning(f"📅 {n.get('Modified_Time', '')[:10]}\n\n{n.get('Note_Content')}")
     with c6:
-        st.write("**【ZOHO 関連状況】**")
         st.write(f"商談登録: {get_zoho_sub_data_simple('Accounts', acc.get('id'), 'Deals') if acc else 'ー'}")
-        st.write(f"キャンペーン履歴: {get_zoho_sub_data_simple('Contacts', con.get('id'), 'Campaigns') if con else 'ー'}")
-        if auto_url != "ー":
-            domain = urlparse(auto_url).netloc
-            st.markdown(f"🔗 [HP内ニュースを検索](https://www.google.com/search?q=site:{domain}+お知らせ+OR+ニュース)")
+        st.write(f"キャンペーン: {get_zoho_sub_data_simple('Contacts', con.get('id'), 'Campaigns') if con else 'ー'}")
+        if url != "ー":
+            domain = urlparse(url).netloc
+            st.markdown(f"🔗 [Googleニュース検索](https://www.google.com/search?q=site:{domain}+お知らせ+OR+ニュース)")
