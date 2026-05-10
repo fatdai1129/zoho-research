@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面（中央配置・崩れない絶対設計）
+# 1. ログイン画面（中央配置を絶対固定）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -29,24 +29,23 @@ if 'authenticated' not in st.session_state:
 if not st.session_state.authenticated:
     st.markdown("""
         <style>
-        /* 背景とサイドバー・ヘッダーの制御 */
+        /* 背景色と不要要素の非表示 */
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
-        .stApp { 
-            background-color: #111827 !important; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        .stApp { background-color: #111827 !important; }
 
-        /* ログインカードの強制中央配置 */
-        div[data-testid="stForm"] {
+        /* ログインフォームを画面のど真ん中に強制固定 */
+        form[aria-label="login_form"] {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
             background-color: white !important;
             padding: 50px 40px !important;
             border-radius: 20px !important;
             box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
             width: 420px !important;
             border: none !important;
-            margin: auto !important; /* これで上下左右中央を担保 */
+            z-index: 10000;
         }
 
         .login-header {
@@ -55,10 +54,8 @@ if not st.session_state.authenticated:
             font-weight: 800;
             margin-bottom: 30px;
             text-align: center;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
         }
         
-        /* ボタンのデザイン */
         .stButton button {
             background-color: #2563eb !important;
             color: white !important;
@@ -70,7 +67,6 @@ if not st.session_state.authenticated:
         </style>
     """, unsafe_allow_html=True)
 
-    # ログインフォーム
     with st.form("login_form"):
         st.markdown('<div class="login-header">商談事前調査システム</div>', unsafe_allow_html=True)
         pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
@@ -83,7 +79,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ==========================================
-# 2. メイン画面デザイン（ログイン後）
+# 2. メイン画面のデザイン（ログイン後）
 # ==========================================
 st.markdown("""
     <style>
@@ -96,7 +92,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. ZOHO API 通信関数
+# 3. ZOHO API / 通信関連
 # ==========================================
 def get_access_token():
     url = "https://accounts.zoho.jp/oauth/v2/token"
@@ -243,7 +239,7 @@ def fetch_company_info(base_url):
     return info
 
 # ==========================================
-# 4. 検索・レポート画面（Enterキー対応）
+# 4. 検索・レポート画面（全Enter対応）
 # ==========================================
 if 'acc_cands' not in st.session_state: st.session_state.acc_cands = []
 if 'con_cands' not in st.session_state: st.session_state.con_cands = []
@@ -252,52 +248,50 @@ if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
 
-# 候補検索フォーム（Enter対応）
+# フォーム1：候補検索
 with st.sidebar.form("search_form"):
-    company_input = st.text_input("会社名", placeholder="株式会社抜きでOK")
-    person_input = st.text_input("担当者名", placeholder="苗字のみでOK")
-    search_btn = st.form_submit_button("候補を検索", use_container_width=True)
+    c_in = st.text_input("会社名", placeholder="株式会社抜きでOK")
+    p_in = st.text_input("担当者名", placeholder="苗字のみでOK")
+    if st.form_submit_button("候補を検索", use_container_width=True):
+        with st.spinner("ZOHO通信中..."):
+            st.session_state.acc_cands = search_zoho_candidates("Accounts", c_in) if c_in else []
+            st.session_state.con_cands = search_zoho_candidates("Contacts", p_in) if p_in else []
+            st.session_state.searched = True
+            st.session_state.show_report = False
 
-if search_btn:
-    with st.spinner("ZOHO通信中..."):
-        st.session_state.acc_cands = search_zoho_candidates("Accounts", company_input) if company_input else []
-        st.session_state.con_cands = search_zoho_candidates("Contacts", person_input) if person_input else []
-        st.session_state.searched = True
-        st.session_state.show_report = False
-
-# レポート作成フォーム（候補選択後のEnter対応）
+# フォーム2：レポート作成（Enter対応のためselectboxをform内に配置）
 if st.session_state.searched:
     st.sidebar.markdown("---")
     with st.sidebar.form("report_form"):
-        f_acc = None
-        f_con = None
+        sel_acc = None
+        sel_con = None
         
-        if company_input and st.session_state.acc_cands:
+        if c_in and st.session_state.acc_cands:
             opts = {"-- 会社選択 --": None}
             for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
-            f_acc = opts[st.selectbox("会社候補", list(opts.keys()))]
+            sel_acc = opts[st.selectbox("会社候補", list(opts.keys()))]
             
-        if person_input and st.session_state.con_cands:
+        if p_in and st.session_state.con_cands:
             c_opts = {"-- 担当者選択 --": None}
             for c in st.session_state.con_cands:
                 c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
                 c_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
-            f_con = c_opts[st.selectbox("担当者候補", list(c_opts.keys()))]
+            sel_con = c_opts[st.selectbox("担当者候補", list(c_opts.keys()))]
 
-        # 会社補完
-        if f_con and not f_acc:
-            a_info = f_con.get("Account_Name")
-            if isinstance(a_info, dict) and a_info.get("id"): f_acc = get_zoho_record_by_id("Accounts", a_info["id"])
+        # 補完ロジック
+        if sel_con and not sel_acc:
+            a_info = sel_con.get("Account_Name")
+            if isinstance(a_info, dict) and a_info.get("id"): sel_acc = get_zoho_record_by_id("Accounts", a_info["id"])
 
         if st.form_submit_button("レポートを作成 🚀", use_container_width=True):
-            if f_acc or f_con:
-                st.session_state.final_acc = f_acc
-                st.session_state.final_con = f_con
+            if sel_acc or sel_con:
+                st.session_state.final_acc = sel_acc
+                st.session_state.final_con = sel_con
                 st.session_state.show_report = True
             else:
                 st.sidebar.error("対象を選択してください")
 
-# レポート表示本体
+# レポート表示
 if st.session_state.show_report:
     acc = st.session_state.final_acc
     con = st.session_state.final_con
