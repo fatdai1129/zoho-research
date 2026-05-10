@@ -29,23 +29,28 @@ if 'authenticated' not in st.session_state:
 if not st.session_state.authenticated:
     st.markdown("""
         <style>
+        /* 背景と不要要素の非表示 */
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* ログインフォームを画面中央に配置し、サイズを固定 */
-        div.login-area div[data-testid="stForm"] {
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
+        /* ログイン専用コンテナ：画面中央に配置 */
+        .login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        /* ログイン画面内のフォームだけを幅400pxに固定 */
+        .login-screen div[data-testid="stForm"] {
+            width: 400px !important;
             background-color: white !important;
             padding: 50px 40px !important;
             border-radius: 20px !important;
             box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
-            width: 400px !important;
-            height: auto !important; /* 縦伸びを抑制 */
             border: none !important;
-            z-index: 10000;
         }
 
         .login-header {
@@ -61,7 +66,8 @@ if not st.session_state.authenticated:
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="login-area">', unsafe_allow_html=True)
+    # ログイン画面を他と隔離
+    st.markdown('<div class="login-screen">', unsafe_allow_html=True)
     with st.form("login_form"):
         st.markdown('<div class="login-header">商談事前調査システム</div>', unsafe_allow_html=True)
         pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
@@ -235,6 +241,7 @@ with st.sidebar.form("search_form"):
 
 if st.session_state.searched:
     st.sidebar.markdown("---")
+    # プルダウンとボタンを1つのフォームに入れることでEnterキーに対応
     with st.sidebar.form("report_form"):
         sel_acc = None
         sel_con = None
