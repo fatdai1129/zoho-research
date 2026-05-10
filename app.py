@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面（中央配置を絶対固定・縦伸び防止）
+# 1. ログイン画面（中央配置・崩れない絶対固定）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -33,7 +33,7 @@ if not st.session_state.authenticated:
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* ログインフォームを画面のど真ん中に強制固定（縦伸びを許さない） */
+        /* ログインフォームを画面のど真ん中に強制固定（縦伸び防止） */
         form[aria-label="login_form"] {
             position: fixed !important;
             top: 50% !important;
@@ -44,9 +44,10 @@ if not st.session_state.authenticated:
             border-radius: 20px !important;
             box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
             width: 420px !important;
-            height: auto !important; /* ここをautoにすることで縦伸びを防止 */
+            height: auto !important; /* 縦伸びを防止 */
             border: none !important;
             z-index: 10000;
+            margin: 0 !important;
         }
 
         .login-header {
@@ -249,7 +250,7 @@ if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
 
-# 1. 候補検索フォーム（Enter対応）
+# 1. 候補検索（Enter対応）
 with st.sidebar.form("search_form"):
     c_in = st.text_input("会社名", placeholder="株式会社抜きでOK")
     p_in = st.text_input("担当者名", placeholder="苗字のみでOK")
@@ -260,37 +261,35 @@ with st.sidebar.form("search_form"):
             st.session_state.searched = True
             st.session_state.show_report = False
 
-# 2. レポート作成フォーム（Enter対応のため、選択とボタンを1つのフォームに収める）
+# 2. レポート作成（Enter対応のため、選択とボタンを1つのフォームとして構築）
 if st.session_state.searched:
     st.sidebar.markdown("---")
-    with st.sidebar.form("report_generation_form"):
-        final_acc = None
-        final_con = None
+    with st.sidebar.form("report_final_form"):
+        f_acc = None
+        f_con = None
         
-        # 会社選択
         if c_in and st.session_state.acc_cands:
-            acc_opts = {"-- 会社選択 --": None}
-            for a in st.session_state.acc_cands: acc_opts[a['Account_Name']] = a
-            final_acc = acc_opts[st.selectbox("会社候補", list(acc_opts.keys()))]
+            opts = {"-- 会社選択 --": None}
+            for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
+            f_acc = opts[st.selectbox("会社候補", list(opts.keys()))]
             
-        # 担当者選択
         if p_in and st.session_state.con_cands:
-            con_opts = {"-- 担当者選択 --": None}
+            c_opts = {"-- 担当者選択 --": None}
             for c in st.session_state.con_cands:
                 c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
-                con_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
-            final_con = con_opts[st.selectbox("担当者候補", list(con_opts.keys()))]
+                c_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
+            f_con = c_opts[st.selectbox("担当者候補", list(c_opts.keys()))]
 
-        # 会社補完（担当者のみ選んだ場合）
-        if final_con and not final_acc:
-            a_info = final_con.get("Account_Name")
-            if isinstance(a_info, dict) and a_info.get("id"): final_acc = get_zoho_record_by_id("Accounts", a_info["id"])
+        # 会社補完
+        if f_con and not f_acc:
+            a_info = f_con.get("Account_Name")
+            if isinstance(a_info, dict) and a_info.get("id"): f_acc = get_zoho_record_by_id("Accounts", a_info["id"])
 
-        # レポート作成実行（Enterキー対応）
+        # このボタンがあるフォーム内でEnterを叩けば、レポートが作成されます
         if st.form_submit_button("レポートを作成 🚀", use_container_width=True):
-            if final_acc or final_con:
-                st.session_state.final_acc = final_acc
-                st.session_state.final_con = final_con
+            if f_acc or f_con:
+                st.session_state.final_acc = f_acc
+                st.session_state.final_con = f_con
                 st.session_state.show_report = True
             else:
                 st.sidebar.error("対象を選択してください")
