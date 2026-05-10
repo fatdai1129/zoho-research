@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面（中央配置を絶対固定）
+# 1. ログイン画面（中央配置・崩れない絶対設計）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -34,7 +34,7 @@ if not st.session_state.authenticated:
         .stApp { background-color: #111827 !important; }
 
         /* ログインフォームを画面のど真ん中に強制固定 */
-        form[aria-label="login_form"] {
+        div[data-testid="stForm"] {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
@@ -79,7 +79,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ==========================================
-# 2. メイン画面のデザイン（ログイン後）
+# 2. メイン画面デザイン（ログイン後：小さくタイトに）
 # ==========================================
 st.markdown("""
     <style>
@@ -248,7 +248,7 @@ if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
 
-# フォーム1：候補検索
+# 候補検索フォーム（Enter対応）
 with st.sidebar.form("search_form"):
     c_in = st.text_input("会社名", placeholder="株式会社抜きでOK")
     p_in = st.text_input("担当者名", placeholder="苗字のみでOK")
@@ -259,7 +259,7 @@ with st.sidebar.form("search_form"):
             st.session_state.searched = True
             st.session_state.show_report = False
 
-# フォーム2：レポート作成（Enter対応のためselectboxをform内に配置）
+# レポート作成フォーム（Enter対応のためselectboxをform内に配置）
 if st.session_state.searched:
     st.sidebar.markdown("---")
     with st.sidebar.form("report_form"):
@@ -291,7 +291,7 @@ if st.session_state.searched:
             else:
                 st.sidebar.error("対象を選択してください")
 
-# レポート表示
+# レポート表示本体
 if st.session_state.show_report:
     acc = st.session_state.final_acc
     con = st.session_state.final_con
