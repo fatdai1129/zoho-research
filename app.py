@@ -19,7 +19,7 @@ REFRESH_TOKEN = "1000.890ffb665991551935349aa0d6f41049.092ada10746ae1e4edf605d35
 st.set_page_config(page_title="商談事前調査システム", layout="wide")
 
 # ==========================================
-# 1. ログイン画面（中央配置・崩れない絶対設計）
+# 1. ログイン画面（中央配置を絶対固定・縦伸び防止）
 # ==========================================
 SYSTEM_PASSWORD = "Dai565656" 
 
@@ -33,8 +33,8 @@ if not st.session_state.authenticated:
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* ログインフォームを画面のど真ん中に強制固定 */
-        div[data-testid="stForm"] {
+        /* ログインフォームを画面のど真ん中に強制固定（縦伸びを許さない） */
+        form[aria-label="login_form"] {
             position: fixed !important;
             top: 50% !important;
             left: 50% !important;
@@ -44,6 +44,7 @@ if not st.session_state.authenticated:
             border-radius: 20px !important;
             box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
             width: 420px !important;
+            height: auto !important; /* ここをautoにすることで縦伸びを防止 */
             border: none !important;
             z-index: 10000;
         }
@@ -79,7 +80,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ==========================================
-# 2. メイン画面デザイン（ログイン後：小さくタイトに）
+# 2. メイン画面デザイン（ログイン後）
 # ==========================================
 st.markdown("""
     <style>
@@ -239,7 +240,7 @@ def fetch_company_info(base_url):
     return info
 
 # ==========================================
-# 4. 検索・レポート表示
+# 4. 検索・レポート表示（全Enter対応）
 # ==========================================
 if 'acc_cands' not in st.session_state: st.session_state.acc_cands = []
 if 'con_cands' not in st.session_state: st.session_state.con_cands = []
@@ -250,40 +251,42 @@ st.sidebar.markdown("### 🔍 調査対象検索")
 
 # 1. 候補検索フォーム（Enter対応）
 with st.sidebar.form("search_form"):
-    company_input = st.text_input("会社名", placeholder="株式会社抜きでOK")
-    person_input = st.text_input("担当者名", placeholder="苗字のみでOK")
+    c_in = st.text_input("会社名", placeholder="株式会社抜きでOK")
+    p_in = st.text_input("担当者名", placeholder="苗字のみでOK")
     if st.form_submit_button("候補を検索", use_container_width=True):
         with st.spinner("ZOHO通信中..."):
-            st.session_state.acc_cands = search_zoho_candidates("Accounts", company_input) if company_input else []
-            st.session_state.con_cands = search_zoho_candidates("Contacts", person_input) if person_input else []
+            st.session_state.acc_cands = search_zoho_candidates("Accounts", c_in) if c_in else []
+            st.session_state.con_cands = search_zoho_candidates("Contacts", p_in) if p_in else []
             st.session_state.searched = True
             st.session_state.show_report = False
 
 # 2. レポート作成フォーム（Enter対応のため、選択とボタンを1つのフォームに収める）
 if st.session_state.searched:
     st.sidebar.markdown("---")
-    with st.sidebar.form("report_form"):
+    with st.sidebar.form("report_generation_form"):
         final_acc = None
         final_con = None
         
-        if company_input and st.session_state.acc_cands:
+        # 会社選択
+        if c_in and st.session_state.acc_cands:
             acc_opts = {"-- 会社選択 --": None}
             for a in st.session_state.acc_cands: acc_opts[a['Account_Name']] = a
             final_acc = acc_opts[st.selectbox("会社候補", list(acc_opts.keys()))]
             
-        if person_input and st.session_state.con_cands:
+        # 担当者選択
+        if p_in and st.session_state.con_cands:
             con_opts = {"-- 担当者選択 --": None}
             for c in st.session_state.con_cands:
                 c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
                 con_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
             final_con = con_opts[st.selectbox("担当者候補", list(con_opts.keys()))]
 
-        # 会社補完
+        # 会社補完（担当者のみ選んだ場合）
         if final_con and not final_acc:
             a_info = final_con.get("Account_Name")
             if isinstance(a_info, dict) and a_info.get("id"): final_acc = get_zoho_record_by_id("Accounts", a_info["id"])
 
-        # ここが「レポート作成」ボタン。Enterキーで動きます。
+        # レポート作成実行（Enterキー対応）
         if st.form_submit_button("レポートを作成 🚀", use_container_width=True):
             if final_acc or final_con:
                 st.session_state.final_acc = final_acc
