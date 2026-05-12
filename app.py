@@ -49,15 +49,29 @@ if not st.session_state.authenticated:
             margin-bottom: 1.5rem;
         }
         
-        /* 入力欄の色調整（背景白に合わせるため） */
-        [data-testid="stForm"] input {
-            color: #111827 !important;
+        /* パスワード入力枠全体の色調整 */
+        [data-testid="stForm"] div[data-baseweb="input"] {
             background-color: #f3f4f6 !important;
             border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
         }
         
-        /* ボタンの色調整 */
-        [data-testid="stForm"] button {
+        /* パスワードテキスト自体の色調整 */
+        [data-testid="stForm"] input {
+            color: #111827 !important;
+            background-color: transparent !important;
+            border: none !important;
+        }
+        
+        /* 目のアイコンの調整 */
+        [data-testid="stForm"] div[data-baseweb="input"] button {
+            background-color: transparent !important;
+            color: #6b7280 !important;
+            border: none !important;
+        }
+        
+        /* ログインボタンの色調整 */
+        [data-testid="stFormSubmitButton"] button {
             background-color: #3b82f6 !important;
             color: #ffffff !important;
             font-weight: bold !important;
