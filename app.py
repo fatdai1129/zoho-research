@@ -29,11 +29,14 @@ if 'authenticated' not in st.session_state:
 if not st.session_state.authenticated:
     st.markdown("""
         <style>
+        /* サイドバーとヘッダーを非表示、背景色を設定 */
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* フォーム全体の装飾 */
-        [data-testid="stForm"] {
+        /* ログインフォーム本体の中央配置と装飾 */
+        .main [data-testid="stForm"] {
+            max-width: 400px !important;
+            margin: 15vh auto !important;
             background-color: #ffffff !important;
             padding: 40px !important;
             border-radius: 16px !important;
@@ -49,52 +52,53 @@ if not st.session_state.authenticated:
             margin-bottom: 24px !important;
         }
         
-        /* 入力欄のコンテナ */
-        div[data-baseweb="input"] {
+        /* 入力欄全体の色調整 */
+        .main [data-testid="stForm"] div[data-baseweb="input"] {
             background-color: #f3f4f6 !important;
             border: 1px solid #d1d5db !important;
             border-radius: 8px !important;
         }
         
-        /* 入力テキスト */
-        div[data-baseweb="input"] input {
+        /* 入力テキストの背景透明化と文字色 */
+        .main [data-testid="stForm"] div[data-baseweb="input"] input {
             color: #111827 !important;
             -webkit-text-fill-color: #111827 !important;
             background-color: transparent !important;
         }
         
-        /* 目のアイコン */
-        div[data-baseweb="input"] svg {
+        /* 目のアイコン部分の背景を透明に統一 */
+        .main [data-testid="stForm"] div[data-baseweb="input"] > div,
+        .main [data-testid="stForm"] div[data-baseweb="input"] button {
+            background-color: transparent !important;
+        }
+        
+        /* 目のアイコン色 */
+        .main [data-testid="stForm"] div[data-baseweb="input"] svg {
             fill: #6b7280 !important;
         }
         
-        /* ログインボタン */
-        [data-testid="stFormSubmitButton"] button {
+        /* ログインボタンの色調整 */
+        .main [data-testid="stFormSubmitButton"] button {
             background-color: #3b82f6 !important;
             color: #ffffff !important;
             font-weight: bold !important;
             border: none !important;
             border-radius: 8px !important;
             margin-top: 10px !important;
+            width: 100% !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # 縦方向の余白で位置調整
-    st.write("<br><br><br><br><br>", unsafe_allow_html=True)
-    
-    # 横方向の余白で中央配置
-    _, col_mid, _ = st.columns([1, 1.2, 1])
-    with col_mid:
-        with st.form("login_form"):
-            st.markdown('<div class="login-title">商談事前調査システム</div>', unsafe_allow_html=True)
-            pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワードを入力", label_visibility="collapsed")
-            if st.form_submit_button("ログイン", use_container_width=True):
-                if pw_input == SYSTEM_PASSWORD:
-                    st.session_state.authenticated = True
-                    st.rerun()
-                else:
-                    st.error("パスワードが違います")
+    with st.form("login_form"):
+        st.markdown('<div class="login-title">商談事前調査システム</div>', unsafe_allow_html=True)
+        pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワードを入力", label_visibility="collapsed")
+        if st.form_submit_button("ログイン"):
+            if pw_input == SYSTEM_PASSWORD:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("パスワードが違います")
     st.stop()
 
 # ==========================================
@@ -247,7 +251,7 @@ if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
 
-# 検索フォーム
+# 検索フォーム (Enter対応)
 with st.sidebar.form("search_form"):
     c_in = st.text_input("会社名", placeholder="株式会社抜きでOK")
     p_in = st.text_input("担当者名", placeholder="苗字のみでOK")
@@ -257,11 +261,10 @@ with st.sidebar.form("search_form"):
         st.session_state.searched = True
         st.session_state.show_report = False
 
-# レポート作成操作
+# レポート作成フォーム (Enter対応)
 if st.session_state.searched:
     st.sidebar.markdown("---")
     
-    # Enterキーで反応するようフォーム化
     with st.sidebar.form("report_form"):
         f_acc = None
         f_con = None
@@ -289,7 +292,7 @@ if st.session_state.searched:
                 st.session_state.show_report = True
                 st.rerun()
             else:
-                st.sidebar.error("対象を選択してください")
+                st.error("対象を選択してください")
 
 # レポート表示
 if st.session_state.show_report:
