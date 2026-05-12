@@ -32,55 +32,50 @@ if not st.session_state.authenticated:
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* フォームの装飾 */
+        /* フォーム全体の装飾 */
         [data-testid="stForm"] {
             background-color: #ffffff !important;
-            padding: 2.5rem !important;
-            border-radius: 1rem !important;
+            padding: 40px !important;
+            border-radius: 16px !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
             border: none !important;
         }
 
         .login-title {
-            color: #111827;
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 1.5rem;
+            color: #111827 !important;
+            font-size: 24px !important;
+            font-weight: 800 !important;
+            text-align: center !important;
+            margin-bottom: 24px !important;
         }
         
-        /* パスワード入力枠全体の色調整 */
-        [data-testid="stForm"] div[data-baseweb="input"] {
+        /* 入力欄のコンテナ */
+        div[data-baseweb="input"] {
             background-color: #f3f4f6 !important;
             border: 1px solid #d1d5db !important;
-            border-radius: 0.5rem !important;
-            overflow: hidden !important;
+            border-radius: 8px !important;
         }
         
-        /* 入力欄内部の要素（ベースや目のアイコンの背景）を透明化して色を統一 */
-        [data-testid="stForm"] div[data-baseweb="input"] * {
+        /* 入力テキスト */
+        div[data-baseweb="input"] input {
+            color: #111827 !important;
+            -webkit-text-fill-color: #111827 !important;
             background-color: transparent !important;
         }
         
-        /* パスワードテキスト自体の色調整 */
-        [data-testid="stForm"] input {
-            color: #111827 !important;
-            -webkit-text-fill-color: #111827 !important;
-        }
-        
-        /* 目のアイコンの色調整 */
-        [data-testid="stForm"] div[data-baseweb="input"] svg {
+        /* 目のアイコン */
+        div[data-baseweb="input"] svg {
             fill: #6b7280 !important;
-            color: #6b7280 !important;
         }
         
-        /* ログインボタンの色調整 */
+        /* ログインボタン */
         [data-testid="stFormSubmitButton"] button {
             background-color: #3b82f6 !important;
             color: #ffffff !important;
             font-weight: bold !important;
             border: none !important;
-            margin-top: 1rem !important;
+            border-radius: 8px !important;
+            margin-top: 10px !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -265,33 +260,36 @@ with st.sidebar.form("search_form"):
 # レポート作成操作
 if st.session_state.searched:
     st.sidebar.markdown("---")
-    f_acc = None
-    f_con = None
     
-    if c_in and st.session_state.acc_cands:
-        opts = {"-- 会社選択 --": None}
-        for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
-        f_acc = opts[st.sidebar.selectbox("会社候補", list(opts.keys()))]
+    # Enterキーで反応するようフォーム化
+    with st.sidebar.form("report_form"):
+        f_acc = None
+        f_con = None
         
-    if p_in and st.session_state.con_cands:
-        c_opts = {"-- 担当者選択 --": None}
-        for c in st.session_state.con_cands:
-            c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
-            c_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
-        f_con = c_opts[st.sidebar.selectbox("担当者候補", list(c_opts.keys()))]
+        if c_in and st.session_state.acc_cands:
+            opts = {"-- 会社選択 --": None}
+            for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
+            f_acc = opts[st.selectbox("会社候補", list(opts.keys()))]
+            
+        if p_in and st.session_state.con_cands:
+            c_opts = {"-- 担当者選択 --": None}
+            for c in st.session_state.con_cands:
+                c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
+                c_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
+            f_con = c_opts[st.selectbox("担当者候補", list(c_opts.keys()))]
 
-    if f_con and not f_acc:
-        a_info = f_con.get("Account_Name")
-        if isinstance(a_info, dict) and a_info.get("id"): f_acc = get_zoho_record_by_id("Accounts", a_info["id"])
+        if f_con and not f_acc:
+            a_info = f_con.get("Account_Name")
+            if isinstance(a_info, dict) and a_info.get("id"): f_acc = get_zoho_record_by_id("Accounts", a_info["id"])
 
-    if st.sidebar.button("レポートを作成 🚀", use_container_width=True):
-        if f_acc or f_con:
-            st.session_state.final_acc = f_acc
-            st.session_state.final_con = f_con
-            st.session_state.show_report = True
-            st.rerun()
-        else:
-            st.sidebar.error("対象を選択してください")
+        if st.form_submit_button("レポートを作成 🚀", use_container_width=True):
+            if f_acc or f_con:
+                st.session_state.final_acc = f_acc
+                st.session_state.final_con = f_con
+                st.session_state.show_report = True
+                st.rerun()
+            else:
+                st.sidebar.error("対象を選択してください")
 
 # レポート表示
 if st.session_state.show_report:
