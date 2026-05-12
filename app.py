@@ -54,20 +54,24 @@ if not st.session_state.authenticated:
             background-color: #f3f4f6 !important;
             border: 1px solid #d1d5db !important;
             border-radius: 0.5rem !important;
+            overflow: hidden !important;
+        }
+        
+        /* 入力欄内部の要素（ベースや目のアイコンの背景）を透明化して色を統一 */
+        [data-testid="stForm"] div[data-baseweb="input"] * {
+            background-color: transparent !important;
         }
         
         /* パスワードテキスト自体の色調整 */
         [data-testid="stForm"] input {
             color: #111827 !important;
-            background-color: transparent !important;
-            border: none !important;
+            -webkit-text-fill-color: #111827 !important;
         }
         
-        /* 目のアイコンの調整 */
-        [data-testid="stForm"] div[data-baseweb="input"] button {
-            background-color: transparent !important;
+        /* 目のアイコンの色調整 */
+        [data-testid="stForm"] div[data-baseweb="input"] svg {
+            fill: #6b7280 !important;
             color: #6b7280 !important;
-            border: none !important;
         }
         
         /* ログインボタンの色調整 */
