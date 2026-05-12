@@ -29,55 +29,59 @@ if 'authenticated' not in st.session_state:
 if not st.session_state.authenticated:
     st.markdown("""
         <style>
-        /* 背景と不要要素の非表示 */
         [data-testid="stSidebar"], [data-testid="stHeader"], header { display: none !important; }
         .stApp { background-color: #111827 !important; }
 
-        /* ログイン専用コンテナ：画面中央に配置 */
-        .login-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-
-        /* ログイン画面内のフォームだけを幅400pxに固定 */
-        .login-screen div[data-testid="stForm"] {
-            width: 400px !important;
-            background-color: white !important;
-            padding: 50px 40px !important;
-            border-radius: 20px !important;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.6) !important;
+        /* フォームの装飾 */
+        [data-testid="stForm"] {
+            background-color: #ffffff !important;
+            padding: 2.5rem !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
             border: none !important;
         }
 
-        .login-header {
-            color: #1f2937; font-size: 24px; font-weight: 800;
-            margin-bottom: 25px; text-align: center;
+        .login-title {
+            color: #111827;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1.5rem;
         }
         
-        .stButton button {
-            background-color: #2563eb !important; color: white !important;
-            width: 100% !important; height: 48px !important;
-            font-weight: bold !important; border-radius: 10px !important;
+        /* 入力欄の色調整（背景白に合わせるため） */
+        [data-testid="stForm"] input {
+            color: #111827 !important;
+            background-color: #f3f4f6 !important;
+            border: 1px solid #d1d5db !important;
+        }
+        
+        /* ボタンの色調整 */
+        [data-testid="stForm"] button {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+            font-weight: bold !important;
+            border: none !important;
+            margin-top: 1rem !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # ログイン画面を他と隔離
-    st.markdown('<div class="login-screen">', unsafe_allow_html=True)
-    with st.form("login_form"):
-        st.markdown('<div class="login-header">商談事前調査システム</div>', unsafe_allow_html=True)
-        pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワード", label_visibility="collapsed")
-        if st.form_submit_button("ログイン"):
-            if pw_input == SYSTEM_PASSWORD:
-                st.session_state.authenticated = True
-                st.rerun()
-            else:
-                st.error("パスワードが正しくありません")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # 縦方向の余白で位置調整
+    st.write("<br><br><br><br><br>", unsafe_allow_html=True)
+    
+    # 横方向の余白で中央配置
+    _, col_mid, _ = st.columns([1, 1.2, 1])
+    with col_mid:
+        with st.form("login_form"):
+            st.markdown('<div class="login-title">商談事前調査システム</div>', unsafe_allow_html=True)
+            pw_input = st.text_input("PASSWORD", type="password", placeholder="パスワードを入力", label_visibility="collapsed")
+            if st.form_submit_button("ログイン", use_container_width=True):
+                if pw_input == SYSTEM_PASSWORD:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("パスワードが違います")
     st.stop()
 
 # ==========================================
@@ -145,6 +149,17 @@ def search_zoho_candidates(module, search_text):
     except: pass
     return candidates
 
+def get_zoho_photo(contact_id):
+    token = get_access_token()
+    if not token or not contact_id: return None
+    headers = {"Authorization": f"Zoho-oauthtoken {token}"}
+    url = f"https://www.zohoapis.jp/crm/v6/Contacts/{contact_id}/photo"
+    try:
+        res = requests.get(url, headers=headers)
+        if res.status_code == 200 and len(res.content) > 100: return res.content
+    except: pass
+    return None
+
 def get_zoho_attachment_image(contact_id):
     token = get_access_token()
     if not token or not contact_id: return None
@@ -159,17 +174,6 @@ def get_zoho_attachment_image(contact_id):
                     dl_url = f"https://www.zohoapis.jp/crm/v6/Contacts/{contact_id}/Attachments/{item.get('id')}"
                     dl_res = requests.get(dl_url, headers=headers)
                     if dl_res.status_code == 200: return dl_res.content
-    except: pass
-    return None
-
-def get_zoho_photo(contact_id):
-    token = get_access_token()
-    if not token or not contact_id: return None
-    headers = {"Authorization": f"Zoho-oauthtoken {token}"}
-    url = f"https://www.zohoapis.jp/crm/v6/Contacts/{contact_id}/photo"
-    try:
-        res = requests.get(url, headers=headers)
-        if res.status_code == 200 and len(res.content) > 100: return res.content
     except: pass
     return None
 
@@ -230,6 +234,7 @@ if 'show_report' not in st.session_state: st.session_state.show_report = False
 
 st.sidebar.markdown("### 🔍 調査対象検索")
 
+# 検索フォーム
 with st.sidebar.form("search_form"):
     c_in = st.text_input("会社名", placeholder="株式会社抜きでOK")
     p_in = st.text_input("担当者名", placeholder="苗字のみでOK")
@@ -239,34 +244,38 @@ with st.sidebar.form("search_form"):
         st.session_state.searched = True
         st.session_state.show_report = False
 
+# レポート作成操作
 if st.session_state.searched:
     st.sidebar.markdown("---")
-    # プルダウンとボタンを1つのフォームに入れることでEnterキーに対応
-    with st.sidebar.form("report_form"):
-        sel_acc = None
-        sel_con = None
-        if c_in and st.session_state.acc_cands:
-            opts = {"-- 会社選択 --": None}
-            for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
-            sel_acc = opts[st.selectbox("会社候補", list(opts.keys()))]
-        if p_in and st.session_state.con_cands:
-            c_opts = {"-- 担当者選択 --": None}
-            for c in st.session_state.con_cands:
-                c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
-                c_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
-            sel_con = c_opts[st.selectbox("担当者候補", list(c_opts.keys()))]
+    f_acc = None
+    f_con = None
+    
+    if c_in and st.session_state.acc_cands:
+        opts = {"-- 会社選択 --": None}
+        for a in st.session_state.acc_cands: opts[a['Account_Name']] = a
+        f_acc = opts[st.sidebar.selectbox("会社候補", list(opts.keys()))]
+        
+    if p_in and st.session_state.con_cands:
+        c_opts = {"-- 担当者選択 --": None}
+        for c in st.session_state.con_cands:
+            c_acc_name = c.get('Account_Name', {}).get('name') if isinstance(c.get('Account_Name'), dict) else "不明"
+            c_opts[f"{c.get('Full_Name')} ({c_acc_name})"] = c
+        f_con = c_opts[st.sidebar.selectbox("担当者候補", list(c_opts.keys()))]
 
-        if sel_con and not sel_acc:
-            a_info = sel_con.get("Account_Name")
-            if isinstance(a_info, dict) and a_info.get("id"): sel_acc = get_zoho_record_by_id("Accounts", a_info["id"])
+    if f_con and not f_acc:
+        a_info = f_con.get("Account_Name")
+        if isinstance(a_info, dict) and a_info.get("id"): f_acc = get_zoho_record_by_id("Accounts", a_info["id"])
 
-        if st.form_submit_button("レポートを作成 🚀", use_container_width=True):
-            if sel_acc or sel_con:
-                st.session_state.final_acc = sel_acc
-                st.session_state.final_con = sel_con
-                st.session_state.show_report = True
-                st.rerun()
+    if st.sidebar.button("レポートを作成 🚀", use_container_width=True):
+        if f_acc or f_con:
+            st.session_state.final_acc = f_acc
+            st.session_state.final_con = f_con
+            st.session_state.show_report = True
+            st.rerun()
+        else:
+            st.sidebar.error("対象を選択してください")
 
+# レポート表示
 if st.session_state.show_report:
     acc = st.session_state.final_acc
     con = st.session_state.final_con
